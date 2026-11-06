@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -26,6 +27,9 @@ android {
             }
         }
     }
+    buildFeatures {
+        compose = true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -41,4 +45,21 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+
+    // Compose BOM
+    implementation(platform("androidx.compose:compose-bom:2026.09.00"))
+
+    // Jetpack Compose UI
+    implementation("androidx.activity:activity-compose:1.13.0")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+
+    // Material Design 3
+    implementation("androidx.compose.material3:material3")
+
+    // Compose Preview
+    debugImplementation("androidx.compose.ui:ui-tooling")
+
+    implementation("androidx.compose.material:material-icons-extended")
 }
