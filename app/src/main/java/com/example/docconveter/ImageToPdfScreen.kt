@@ -1,6 +1,9 @@
 package com.example.docconveter
 
 import android.content.Context
+import android.content.Intent
+import android.content.ActivityNotFoundException
+import android.widget.Toast
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.RectF
@@ -12,6 +15,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddPhotoAlternate
@@ -30,6 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImageToPdfScreen(
@@ -42,8 +48,16 @@ fun ImageToPdfScreen(
     var isProcessing by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
 
+    var showPdfSuccessDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var createdPdfUri by remember {
+        mutableStateOf<Uri?>(null)
+    }
+
     val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenMultipleDocuments()
+        contract = ActivityResultContracts.GetMultipleContents()
     ) { uris ->
         if (uris.isNotEmpty()) {
             selectedImages = uris
@@ -81,6 +95,8 @@ fun ImageToPdfScreen(
                 }
 
                 if (result.isSuccess) {
+                    createdPdfUri = outputUri
+                    showPdfSuccessDialog = true
                     selectedImages = emptyList()
                 }
             }
@@ -116,6 +132,7 @@ fun ImageToPdfScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState())
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -150,7 +167,7 @@ fun ImageToPdfScreen(
 
             OutlinedButton(
                 onClick = {
-                    imagePicker.launch(arrayOf("image/*"))
+                    imagePicker.launch("image/*")
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -288,6 +305,62 @@ fun ImageToPdfScreen(
             }
         }
     }
+    if (showPdfSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showPdfSuccessDialog = false
+            },
+            title = {
+                Text("PDF Created Successfully!")
+            },
+            text = {
+                Text(
+                    "Your PDF has been saved successfully. " +
+                            "Would you like to open it now?"
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showPdfSuccessDialog = false
+
+                        createdPdfUri?.let { uri ->
+                            val intent = Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(
+                                    uri,
+                                    "application/pdf"
+                                )
+                                addFlags(
+                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                )
+                            }
+
+                            try {
+                                context.startActivity(intent)
+                            } catch (e: ActivityNotFoundException) {
+                                Toast.makeText(
+                                    context,
+                                    "No PDF viewer installed.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    }
+                ) {
+                    Text("Open PDF")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showPdfSuccessDialog = false
+                    }
+                ) {
+                    Text("Later")
+                }
+            }
+        )
+    }
 }
 
 private fun createPdfFromImages(
@@ -315,79 +388,96 @@ private fun createPdfFromImages(
 
                 val page = pdfDocument.startPage(pageInfo)
 
-                val pageWidth = 595f
-                val pageHeight = 842f
-                val margin = 28f
+                try {
+                    val margin = 28f
+                    val pageWidth = 595f
+                    val pageHeight = 842f
 
-                val availableWidth = pageWidth - (margin * 2)
-                val availableHeight = pageHeight - (margin * 2)
+                    val availableWidth = pageWidth - 2 * margin
+                    val availableHeight = pageHeight - 2 * margin
 
-                val scale = minOf(
-                    availableWidth / bitmap.width,
-                    availableHeight / bitmap.height
-                )
+                    val scale = minOf(
+                        availableWidth / bitmap.width.toFloat(),
+                        availableHeight / bitmap.height.toFloat()
+                    )
 
-                val scaledWidth = bitmap.width * scale
-                val scaledHeight = bitmap.height * scale
+                    val scaledWidth = bitmap.width * scale
+                    val scaledHeight = bitmap.height * scale
 
-                val left = (pageWidth - scaledWidth) / 2f
-                val top = (pageHeight - scaledHeight) / 2f
+                    val left = (pageWidth - scaledWidth) / 2f
+                    val top = (pageHeight - scaledHeight) / 2f
 
-                val destination = RectF(
-                    left,
-                    top,
-                    left + scaledWidth,
-                    top + scaledHeight
-                )
+                    val destination = RectF(
+                        left,
+                        top,
+                        left + scaledWidth,
+                        top + scaledHeight
+                    )
 
-                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    isFilterBitmap = true
+                    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        isFilterBitmap = true
+                    }
+
+                    page.canvas.drawBitmap(
+                        bitmap,
+                        null,
+                        destination,
+                        paint
+                    )
+                } finally {
+                    pdfDocument.finishPage(page)
                 }
-
-                page.canvas.drawBitmap(
-                    bitmap,
-                    null,
-                    destination,
-                    paint
-                )
-
-                pdfDocument.finishPage(page)
 
             } finally {
                 bitmap.recycle()
             }
         }
 
+        // Write the completed PDF to the selected destination.
         val outputStream = requireNotNull(
-            context.contentResolver.openOutputStream(outputUri)
+            context.contentResolver.openOutputStream(outputUri, "wt")
         ) {
-            "Cannot open the selected save location."
+            "Unable to open the destination file."
         }
 
-        outputStream.use {
-            pdfDocument.writeTo(it)
+        outputStream.use { stream ->
+            pdfDocument.writeTo(stream)
+            stream.flush()
         }
+
 
     } finally {
         pdfDocument.close()
     }
 }
 
+
+
 private fun decodeImage(
     context: Context,
     uri: Uri
 ): Bitmap {
 
+    val imageBytes = context.contentResolver
+        .openInputStream(uri)
+        ?.use { it.readBytes() }
+        ?: throw IllegalStateException(
+            "Cannot open image. Provider: ${uri.authority}"
+        )
+
     val bounds = BitmapFactory.Options().apply {
         inJustDecodeBounds = true
     }
 
-    context.contentResolver.openInputStream(uri)?.use {
-        BitmapFactory.decodeStream(it, null, bounds)
-    } ?: throw IllegalStateException("Cannot read selected image.")
+    BitmapFactory.decodeByteArray(
+        imageBytes,
+        0,
+        imageBytes.size,
+        bounds
+    )
 
     require(bounds.outWidth > 0 && bounds.outHeight > 0) {
-        "Invalid image file."
+        "Unsupported or corrupted image: ${uri.lastPathSegment}"
     }
 
     val options = BitmapFactory.Options().apply {
@@ -398,9 +488,14 @@ private fun decodeImage(
         inPreferredConfig = Bitmap.Config.ARGB_8888
     }
 
-    return context.contentResolver.openInputStream(uri)?.use {
-        BitmapFactory.decodeStream(it, null, options)
-    } ?: throw IllegalStateException("Unable to decode image.")
+    return BitmapFactory.decodeByteArray(
+        imageBytes,
+        0,
+        imageBytes.size,
+        options
+    ) ?: throw IllegalStateException(
+        "Unable to decode image: ${uri.lastPathSegment}"
+    )
 }
 
 private fun calculateSampleSize(
