@@ -58,12 +58,22 @@ fun DocConveterApp() {
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
     var showImageToPdf by remember { mutableStateOf(false) }
+    var showPdfToImage by remember { mutableStateOf(false) }
 
     // Open the Image to PDF screen
     if (showImageToPdf) {
         ImageToPdfScreen(
             onBack = {
                 showImageToPdf = false
+            }
+        )
+        return
+    }
+    // Open the PDF to Image screen
+    if (showPdfToImage) {
+        PdfToImageScreen(
+            onBack = {
+                showPdfToImage = false
             }
         )
         return
@@ -295,7 +305,9 @@ fun DocConveterApp() {
                                     tool = tool,
                                     modifier = Modifier.weight(1f),
                                     onClick = {
-                                        if (tool.title == "Image to PDF") {
+                                        if (tool.title == "PDF to Image") {
+                                            showPdfToImage = true
+                                        } else if (tool.title == "Image to PDF") {
                                             showImageToPdf = true
                                         } else {
                                             Toast.makeText(
@@ -425,5 +437,6 @@ private fun ToolCard(
                 lineHeight = 15.sp
             )
         }
+
     }
 }
