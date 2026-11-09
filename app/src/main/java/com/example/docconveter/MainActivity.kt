@@ -59,6 +59,7 @@ fun DocConveterApp() {
     var searchQuery by remember { mutableStateOf("") }
     var showImageToPdf by remember { mutableStateOf(false) }
     var showPdfToImage by remember { mutableStateOf(false) }
+    var showMergePdf by remember { mutableStateOf(false) }
 
     // Open the Image to PDF screen
     if (showImageToPdf) {
@@ -74,6 +75,16 @@ fun DocConveterApp() {
         PdfToImageScreen(
             onBack = {
                 showPdfToImage = false
+            }
+        )
+        return
+    }
+
+    // Open the Merge PDF screen
+    if (showMergePdf) {
+        MergePdfScreen(
+            onBack = {
+                showMergePdf = false
             }
         )
         return
@@ -151,7 +162,7 @@ fun DocConveterApp() {
 
                 Spacer(modifier = Modifier.height(30.dp))
 
-                // Welcome heading
+                // Welcome to heading
                 Text(
                     text = "What would you like",
                     fontSize = 27.sp,
@@ -306,10 +317,19 @@ fun DocConveterApp() {
                                     modifier = Modifier.weight(1f),
                                     onClick = {
                                         if (tool.title == "PDF to Image") {
+
                                             showPdfToImage = true
+
                                         } else if (tool.title == "Image to PDF") {
+
                                             showImageToPdf = true
+
+                                        } else if (tool.title == "Merge PDF") {
+
+                                            showMergePdf = true
+
                                         } else {
+
                                             Toast.makeText(
                                                 context,
                                                 "${tool.title} is coming soon!",

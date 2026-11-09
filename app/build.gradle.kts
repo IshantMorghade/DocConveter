@@ -62,4 +62,6 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("androidx.compose.material:material-icons-extended")
+
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 }
