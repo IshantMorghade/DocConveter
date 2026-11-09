@@ -60,6 +60,7 @@ fun DocConveterApp() {
     var showImageToPdf by remember { mutableStateOf(false) }
     var showPdfToImage by remember { mutableStateOf(false) }
     var showMergePdf by remember { mutableStateOf(false) }
+    var showSplitPdf by remember { mutableStateOf(false) }
 
     // Open the Image to PDF screen
     if (showImageToPdf) {
@@ -85,6 +86,16 @@ fun DocConveterApp() {
         MergePdfScreen(
             onBack = {
                 showMergePdf = false
+            }
+        )
+        return
+    }
+
+    // Open the Split PDF screen
+    if (showSplitPdf) {
+        SplitPdfScreen(
+            onBack = {
+                showSplitPdf = false
             }
         )
         return
@@ -327,6 +338,10 @@ fun DocConveterApp() {
                                         } else if (tool.title == "Merge PDF") {
 
                                             showMergePdf = true
+
+                                        } else if (tool.title == "Split PDF") {
+
+                                            showSplitPdf = true
 
                                         } else {
 
