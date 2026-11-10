@@ -61,6 +61,7 @@ fun DocConveterApp() {
     var showPdfToImage by remember { mutableStateOf(false) }
     var showMergePdf by remember { mutableStateOf(false) }
     var showSplitPdf by remember { mutableStateOf(false) }
+    var showPdfCompression by remember { mutableStateOf(false) }
 
     // Open the Image to PDF screen
     if (showImageToPdf) {
@@ -101,11 +102,22 @@ fun DocConveterApp() {
         return
     }
 
+    // Open PDF Compression screen
+    if (showPdfCompression) {
+        PdfCompressionScreen(
+            onBack = {
+                showPdfCompression = false
+            }
+        )
+        return
+    }
+
     val tools = listOf(
         PdfTool("PDF to Image", "Convert pages to images", Icons.Filled.Image),
         PdfTool("Image to PDF", "Create PDF from images", Icons.Filled.PictureAsPdf),
         PdfTool("Merge PDF", "Combine multiple PDFs", Icons.Filled.CallMerge),
         PdfTool("Split PDF", "Extract selected pages", Icons.Filled.CallSplit),
+        PdfTool("Compress PDF", "Reduce PDF file size", Icons.Filled.Compress),
         PdfTool("Rotate PDF", "Change page orientation", Icons.Filled.RotateRight)
     )
 
@@ -270,11 +282,7 @@ fun DocConveterApp() {
 
                         Button(
                             onClick = {
-                                Toast.makeText(
-                                    context,
-                                    "PDF compression is coming soon!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                showPdfCompression = true
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color.White,
@@ -342,6 +350,10 @@ fun DocConveterApp() {
                                         } else if (tool.title == "Split PDF") {
 
                                             showSplitPdf = true
+
+                                        } else if (tool.title == "Compress PDF") {
+
+                                            showPdfCompression = true
 
                                         } else {
 
