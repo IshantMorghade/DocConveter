@@ -62,6 +62,7 @@ fun DocConveterApp() {
     var showMergePdf by remember { mutableStateOf(false) }
     var showSplitPdf by remember { mutableStateOf(false) }
     var showPdfCompression by remember { mutableStateOf(false) }
+    var showRotatePdf by remember { mutableStateOf(false) }
 
     // Open the Image to PDF screen
     if (showImageToPdf) {
@@ -107,6 +108,16 @@ fun DocConveterApp() {
         PdfCompressionScreen(
             onBack = {
                 showPdfCompression = false
+            }
+        )
+        return
+    }
+
+    // Open Rotate PDF screen
+    if (showRotatePdf) {
+        RotatePdfScreen(
+            onBack = {
+                showRotatePdf = false
             }
         )
         return
@@ -354,6 +365,10 @@ fun DocConveterApp() {
                                         } else if (tool.title == "Compress PDF") {
 
                                             showPdfCompression = true
+
+                                        } else if (tool.title == "Rotate PDF") {
+
+                                            showRotatePdf = true
 
                                         } else {
 
