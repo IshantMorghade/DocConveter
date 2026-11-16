@@ -91,47 +91,73 @@ fun PdfToImageScreen(
         mutableIntStateOf(0)
     }
 
+    var pageSelectionMode by remember {
+        mutableStateOf("All pages")
+    }
+
+    var pageSelectionInput by remember {
+        mutableStateOf("")
+    }
+
     // Start PDF conversion
+
     val convertPdf: (Uri, Uri) -> Unit = { pdfUri, folderUri ->
 
-        isConverting = true
-        errorMessage = null
-        showSuccessDialog = false
-        firstImageUri = null
+        val selectedPages = try {
+            parsePageSelection(
+                mode = pageSelectionMode,
+                input = pageSelectionInput,
+                pageCount = pageCount
+            )
+        } catch (e: Exception) {
+            errorMessage = e.localizedMessage ?: "Invalid page selection."
+            null
+        }
 
-        scope.launch {
+        if (selectedPages != null) {
 
-            val result = withContext(Dispatchers.IO) {
-                runCatching {
-                    savePdfPagesAsImages(
-                        context = context,
-                        pdfUri = pdfUri,
-                        folderUri = folderUri
-                    )
+            isConverting = true
+            errorMessage = null
+            showSuccessDialog = false
+            firstImageUri = null
+
+            scope.launch {
+
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        savePdfPagesAsImages(
+                            context = context,
+                            pdfUri = pdfUri,
+                            folderUri = folderUri,
+                            selectedPageIndexes = selectedPages
+                        )
+                    }
                 }
-            }
 
-            isConverting = false
+                isConverting = false
 
-            if (result.isSuccess) {
+                if (result.isSuccess) {
 
-                val conversion = result.getOrThrow()
+                    val conversion = result.getOrThrow()
 
-                firstImageUri = conversion.firstImageUri
-                convertedPageCount = conversion.pageCount
-                errorMessage = null
+                    firstImageUri = conversion.firstImageUri
+                    convertedPageCount = conversion.pageCount
+                    errorMessage = null
 
-                showSuccessDialog = true
-            } else {
+                    showSuccessDialog = true
 
-                errorMessage =
-                    "Conversion failed: ${
-                        result.exceptionOrNull()?.localizedMessage
-                            ?: "Unknown error"
-                    }"
+                } else {
+
+                    errorMessage =
+                        "Conversion failed: ${
+                            result.exceptionOrNull()?.localizedMessage
+                                ?: "Unknown error"
+                        }"
+                }
             }
         }
     }
+
 
     // Ask user to choose an output folder
     val folderPicker = rememberLauncherForActivityResult(
@@ -388,6 +414,99 @@ fun PdfToImageScreen(
                 }
 
 
+// Page selection options
+                if (previewBitmap != null && !isLoading) {
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+
+                            Text(
+                                text = "Select Pages",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            listOf(
+                                "All pages",
+                                "Page range",
+                                "Individual pages"
+                            ).forEach { option ->
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = pageSelectionMode == option,
+                                        onClick = {
+                                            pageSelectionMode = option
+                                            pageSelectionInput = ""
+                                            errorMessage = null
+                                        }
+                                    )
+
+                                    Text(
+                                        text = option,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+
+                            if (pageSelectionMode != "All pages") {
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                OutlinedTextField(
+                                    value = pageSelectionInput,
+                                    onValueChange = {
+                                        pageSelectionInput = it
+                                        errorMessage = null
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = {
+                                        Text(
+                                            if (pageSelectionMode == "Page range")
+                                                "Page range"
+                                            else
+                                                "Page numbers"
+                                        )
+                                    },
+                                    placeholder = {
+                                        Text(
+                                            if (pageSelectionMode == "Page range")
+                                                "Example: 1-10"
+                                            else
+                                                "Example: 1,3,7,12"
+                                        )
+                                    },
+                                    singleLine = true
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = "Total PDF pages: $pageCount",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                }
+
                 // Convert PDF Button
                 if (previewBitmap != null && !isLoading) {
 
@@ -396,8 +515,23 @@ fun PdfToImageScreen(
                     Button(
                         onClick = {
 
-                            if (selectedPdfUri != null) {
-                                folderPicker.launch(null)
+                            val selectedPages = try {
+                                parsePageSelection(
+                                    mode = pageSelectionMode,
+                                    input = pageSelectionInput,
+                                    pageCount = pageCount
+                                )
+                            } catch (e: Exception) {
+                                errorMessage = e.localizedMessage ?: "Invalid page selection."
+                                null
+                            }
+
+                            if (selectedPages != null) {
+                                errorMessage = null
+
+                                if (selectedPdfUri != null) {
+                                    folderPicker.launch(null)
+                                }
                             }
                         },
                         enabled = !isConverting,
@@ -586,10 +720,80 @@ private data class PdfConversionResult(
 )
 
 
+private fun parsePageSelection(
+    mode: String,
+    input: String,
+    pageCount: Int
+): List<Int> {
+
+    require(pageCount > 0) {
+        "PDF contains no pages."
+    }
+
+    return when (mode) {
+
+        "All pages" -> {
+            (0 until pageCount).toList()
+        }
+
+        "Page range" -> {
+
+            val match = Regex("""^\s*(\d+)\s*-\s*(\d+)\s*$""")
+                .matchEntire(input)
+                ?: throw IllegalArgumentException(
+                    "Enter a page range like 1-10."
+                )
+
+            val start = match.groupValues[1].toInt()
+            val end = match.groupValues[2].toInt()
+
+            require(start >= 1 && end <= pageCount && start <= end) {
+                "Enter a valid range between 1 and $pageCount."
+            }
+
+            (start - 1 until end).toList()
+        }
+
+        "Individual pages" -> {
+
+            val pages = input.split(",").map { value ->
+
+                val page = value.trim().toIntOrNull()
+                    ?: throw IllegalArgumentException(
+                        "Enter page numbers separated by commas, e.g. 1,3,7."
+                    )
+
+                require(page in 1..pageCount) {
+                    "Page numbers must be between 1 and $pageCount."
+                }
+
+                page
+            }
+
+            require(pages.isNotEmpty()) {
+                "Select at least one page."
+            }
+
+            require(pages.distinct().size == pages.size) {
+                "Duplicate page numbers are not allowed."
+            }
+
+            pages.map { it - 1 }
+        }
+
+        else -> throw IllegalArgumentException(
+            "Invalid page selection."
+        )
+    }
+}
+
+
+
 private fun savePdfPagesAsImages(
     context: Context,
     pdfUri: Uri,
-    folderUri: Uri
+    folderUri: Uri,
+    selectedPageIndexes: List<Int>
 ): PdfConversionResult {
 
     val descriptor = context.contentResolver
@@ -608,11 +812,18 @@ private fun savePdfPagesAsImages(
                 "PDF contains no pages."
             }
 
+            require(
+                selectedPageIndexes.isNotEmpty() &&
+                        selectedPageIndexes.all { it in 0 until totalPages }
+            ) {
+                "Invalid page selection."
+            }
+
             var firstSavedImage: Uri? = null
 
-            for (index in 0 until totalPages) {
+            for (pageIndex in selectedPageIndexes) {
 
-                val page = renderer.openPage(index)
+                val page = renderer.openPage(pageIndex)
 
                 try {
 
@@ -645,10 +856,10 @@ private fun savePdfPagesAsImages(
                             context = context,
                             folderUri = folderUri,
                             bitmap = bitmap,
-                            fileName = "DocConveter_Page_${index + 1}.jpg"
+                            fileName = "DocConveter_Page_${pageIndex + 1}.jpg"
                         )
 
-                        if (index == 0) {
+                        if (firstSavedImage == null) {
                             firstSavedImage = savedUri
                         }
 
@@ -664,7 +875,7 @@ private fun savePdfPagesAsImages(
             }
 
             return PdfConversionResult(
-                pageCount = totalPages,
+                pageCount = selectedPageIndexes.size,
                 firstImageUri = requireNotNull(firstSavedImage)
             )
 
@@ -674,6 +885,7 @@ private fun savePdfPagesAsImages(
         }
     }
 }
+
 
 
 private fun saveJpegImage(
