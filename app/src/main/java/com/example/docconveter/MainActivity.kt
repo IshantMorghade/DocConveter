@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -30,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
 
 private val BrandBlue = Color(0xFF3157D5)
 private val PageBackground = Color(0xFFF6F7FB)
@@ -63,6 +65,25 @@ fun DocConveterApp() {
     var showSplitPdf by remember { mutableStateOf(false) }
     var showPdfCompression by remember { mutableStateOf(false) }
     var showRotatePdf by remember { mutableStateOf(false) }
+
+    // Handle Android system Back button for all PDF screens
+    BackHandler(
+        enabled = showImageToPdf ||
+                showPdfToImage ||
+                showMergePdf ||
+                showSplitPdf ||
+                showPdfCompression ||
+                showRotatePdf
+    ) {
+        when {
+            showImageToPdf -> showImageToPdf = false
+            showPdfToImage -> showPdfToImage = false
+            showMergePdf -> showMergePdf = false
+            showSplitPdf -> showSplitPdf = false
+            showPdfCompression -> showPdfCompression = false
+            showRotatePdf -> showRotatePdf = false
+        }
+    }
 
     // Open the Image to PDF screen
     if (showImageToPdf) {
