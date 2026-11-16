@@ -57,11 +57,11 @@ fun ImageToPdfScreen(
     }
 
     val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetMultipleContents()
+        contract = ActivityResultContracts.OpenMultipleDocuments()
     ) { uris ->
         if (uris.isNotEmpty()) {
             selectedImages = uris
-            statusMessage = null
+            statusMessage = ""
         }
     }
 
@@ -167,7 +167,7 @@ fun ImageToPdfScreen(
 
             OutlinedButton(
                 onClick = {
-                    imagePicker.launch("image/*")
+                    imagePicker.launch(arrayOf("image/*"))
                 },
                 modifier = Modifier
                     .fillMaxWidth()
