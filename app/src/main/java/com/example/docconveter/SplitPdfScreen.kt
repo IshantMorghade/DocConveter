@@ -8,7 +8,7 @@ import android.graphics.pdf.PdfRenderer
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -251,13 +251,15 @@ fun SplitPdfScreen(
         )
     ) {
 
+
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = {
                         Text(
                             "Split PDF",
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     },
                     navigationIcon = {
@@ -267,16 +269,17 @@ fun SplitPdfScreen(
                         ) {
                             Icon(
                                 Icons.Default.ArrowBack,
-                                contentDescription = "Go back"
+                                contentDescription = "Go back",
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
                 )
             },
-            containerColor = Color(0xFFF6F7FB)
+            containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
 
             Column(
@@ -289,7 +292,8 @@ fun SplitPdfScreen(
                 Text(
                     "Extract Pages from PDF",
                     fontSize = 23.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -297,7 +301,7 @@ fun SplitPdfScreen(
                 Text(
                     "Select a PDF and enter the pages you want to extract.",
                     fontSize = 14.sp,
-                    color = Color(0xFF737D91)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -329,7 +333,9 @@ fun SplitPdfScreen(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
 
@@ -339,24 +345,28 @@ fun SplitPdfScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        border = BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outlineVariant
                         )
                     ) {
                         Column(
                             modifier = Modifier.padding(18.dp)
                         ) {
-
                             Text(
                                 pdfName,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
 
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
                                 "Total pages: $totalPages",
-                                color = Color(0xFF3157D5),
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 17.sp
                             )
@@ -368,7 +378,8 @@ fun SplitPdfScreen(
                     Text(
                         "Pages to extract",
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -391,7 +402,7 @@ fun SplitPdfScreen(
                         "Use commas to separate pages or ranges. " +
                                 "Valid pages: 1 to $totalPages.",
                         fontSize = 12.sp,
-                        color = Color(0xFF737D91)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -399,7 +410,6 @@ fun SplitPdfScreen(
 
                 Button(
                     onClick = {
-
                         try {
 
                             pendingPages = parsePageRanges(
@@ -430,12 +440,11 @@ fun SplitPdfScreen(
                         .height(55.dp),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-
                     if (isExtracting) {
 
                         CircularProgressIndicator(
                             modifier = Modifier.size(22.dp),
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onPrimary,
                             strokeWidth = 2.dp
                         )
 

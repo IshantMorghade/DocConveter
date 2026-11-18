@@ -1,10 +1,12 @@
 package com.example.docconveter
 
+import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,11 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-
 private val BrandBlue = Color(0xFF3157D5)
-private val PageBackground = Color(0xFFF6F7FB)
-private val DarkText = Color(0xFF172033)
-private val SecondaryText = Color(0xFF737D91)
 
 private data class PdfTool(
     val title: String,
@@ -45,6 +44,7 @@ private data class PdfTool(
 )
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -58,409 +58,524 @@ class MainActivity : ComponentActivity() {
 fun DocConveterApp() {
 
     val context = LocalContext.current
+
+    val preferences = remember {
+        context.getSharedPreferences(
+            "docconveter_settings",
+            Context.MODE_PRIVATE
+        )
+    }
+
+    var isDarkTheme by remember {
+        mutableStateOf(
+            preferences.getBoolean("dark_theme", false)
+        )
+    }
+
     var searchQuery by remember { mutableStateOf("") }
+
     var showImageToPdf by remember { mutableStateOf(false) }
     var showPdfToImage by remember { mutableStateOf(false) }
     var showMergePdf by remember { mutableStateOf(false) }
     var showSplitPdf by remember { mutableStateOf(false) }
     var showPdfCompression by remember { mutableStateOf(false) }
     var showRotatePdf by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
 
-    // Handle Android system Back button for all PDF screens
-    BackHandler(
-        enabled = showImageToPdf ||
-                showPdfToImage ||
-                showMergePdf ||
-                showSplitPdf ||
-                showPdfCompression ||
-                showRotatePdf
-    ) {
-        when {
-            showImageToPdf -> showImageToPdf = false
-            showPdfToImage -> showPdfToImage = false
-            showMergePdf -> showMergePdf = false
-            showSplitPdf -> showSplitPdf = false
-            showPdfCompression -> showPdfCompression = false
-            showRotatePdf -> showRotatePdf = false
-        }
-    }
+    // App color scheme
+    val appColorScheme = if (isDarkTheme) {
 
-    // Open the Image to PDF screen
-    if (showImageToPdf) {
-        ImageToPdfScreen(
-            onBack = {
-                showImageToPdf = false
-            }
+        darkColorScheme(
+            primary = Color(0xFF9DB5FF),
+            onPrimary = Color(0xFF17243A),
+            background = Color(0xFF171B24),
+            onBackground = Color(0xFFF1F3F8),
+            surface = Color(0xFF222936),
+            onSurface = Color(0xFFF1F3F8),
+            onSurfaceVariant = Color(0xFFA7B0C1),
+            outline = Color(0xFF3B4556),
+            outlineVariant = Color(0xFF303A4A)
         )
-        return
-    }
-    // Open the PDF to Image screen
-    if (showPdfToImage) {
-        PdfToImageScreen(
-            onBack = {
-                showPdfToImage = false
-            }
+
+    } else {
+
+        lightColorScheme(
+            primary = Color(0xFF3157D5),
+            onPrimary = Color.White,
+            background = Color(0xFFF5F6F8),
+            onBackground = Color(0xFF17243A),
+            surface = Color.White,
+            onSurface = Color(0xFF17243A),
+            onSurfaceVariant = Color(0xFF657187),
+            outline = Color(0xFFDCE1E9),
+            outlineVariant = Color(0xFFE8EBF0)
         )
-        return
     }
 
-    // Open the Merge PDF screen
-    if (showMergePdf) {
-        MergePdfScreen(
-            onBack = {
-                showMergePdf = false
-            }
-        )
-        return
-    }
-
-    // Open the Split PDF screen
-    if (showSplitPdf) {
-        SplitPdfScreen(
-            onBack = {
-                showSplitPdf = false
-            }
-        )
-        return
-    }
-
-    // Open PDF Compression screen
-    if (showPdfCompression) {
-        PdfCompressionScreen(
-            onBack = {
-                showPdfCompression = false
-            }
-        )
-        return
-    }
-
-    // Open Rotate PDF screen
-    if (showRotatePdf) {
-        RotatePdfScreen(
-            onBack = {
-                showRotatePdf = false
-            }
-        )
-        return
-    }
-
-    val tools = listOf(
-        PdfTool("PDF to Image", "Convert pages to images", Icons.Filled.Image),
-        PdfTool("Image to PDF", "Create PDF from images", Icons.Filled.PictureAsPdf),
-        PdfTool("Merge PDF", "Combine multiple PDFs", Icons.Filled.CallMerge),
-        PdfTool("Split PDF", "Extract selected pages", Icons.Filled.CallSplit),
-        PdfTool("Compress PDF", "Reduce PDF file size", Icons.Filled.Compress),
-        PdfTool("Rotate PDF", "Change page orientation", Icons.Filled.RotateRight)
-    )
-
-    val filteredTools = tools.filter {
-        it.title.contains(searchQuery, ignoreCase = true) ||
-                it.subtitle.contains(searchQuery, ignoreCase = true)
-    }
-
+    // IMPORTANT:
+    // Apply MaterialTheme to the entire app,
+    // not only the home screen.
     MaterialTheme(
-        colorScheme = lightColorScheme(
-            primary = BrandBlue,
-            background = PageBackground,
-            surface = Color.White
-        )
+        colorScheme = appColorScheme
     ) {
-        Scaffold(
-            containerColor = PageBackground
-        ) { paddingValues ->
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-            ) {
+        // Handle Android system Back button
+        BackHandler(
+            enabled = showImageToPdf ||
+                    showPdfToImage ||
+                    showMergePdf ||
+                    showSplitPdf ||
+                    showPdfCompression ||
+                    showRotatePdf ||
+                    showSettings
+        ) {
+            when {
+                showImageToPdf -> showImageToPdf = false
+                showPdfToImage -> showPdfToImage = false
+                showMergePdf -> showMergePdf = false
+                showSplitPdf -> showSplitPdf = false
+                showPdfCompression -> showPdfCompression = false
+                showRotatePdf -> showRotatePdf = false
+                showSettings -> showSettings = false
+            }
+        }
 
-                Spacer(modifier = Modifier.height(18.dp))
+        // Image to PDF
+        if (showImageToPdf) {
 
-                // App branding
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(BrandBlue),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Description,
-                            contentDescription = "DocConveter logo",
-                            tint = Color.White,
-                            modifier = Modifier.size(27.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-                        Text(
-                            text = "DocConveter",
-                            fontSize = 21.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = DarkText
-                        )
-                        Text(
-                            text = "Every file. One solution.",
-                            fontSize = 12.sp,
-                            color = SecondaryText
-                        )
-                    }
+            ImageToPdfScreen(
+                onBack = {
+                    showImageToPdf = false
                 }
+            )
 
-                Spacer(modifier = Modifier.height(30.dp))
+        }
 
-                // Welcome to heading
-                Text(
-                    text = "What would you like",
-                    fontSize = 27.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkText
+        // PDF to Image
+        else if (showPdfToImage) {
+
+            PdfToImageScreen(
+                onBack = {
+                    showPdfToImage = false
+                }
+            )
+
+        }
+
+        // Merge PDF
+        else if (showMergePdf) {
+
+            MergePdfScreen(
+                onBack = {
+                    showMergePdf = false
+                }
+            )
+
+        }
+
+        // Split PDF
+        else if (showSplitPdf) {
+
+            SplitPdfScreen(
+                onBack = {
+                    showSplitPdf = false
+                }
+            )
+
+        }
+
+        // Compress PDF
+        else if (showPdfCompression) {
+
+            PdfCompressionScreen(
+                onBack = {
+                    showPdfCompression = false
+                }
+            )
+
+        }
+
+        // Rotate PDF
+        else if (showRotatePdf) {
+
+            RotatePdfScreen(
+                onBack = {
+                    showRotatePdf = false
+                }
+            )
+
+        }
+
+        // Settings
+        else if (showSettings) {
+
+            SettingsScreen(
+                isDarkTheme = isDarkTheme,
+                onThemeChange = { darkMode ->
+
+                    isDarkTheme = darkMode
+
+                    preferences.edit()
+                        .putBoolean("dark_theme", darkMode)
+                        .apply()
+                },
+                onBack = {
+                    showSettings = false
+                }
+            )
+
+        }
+
+        // Home screen
+        else {
+
+            val tools = listOf(
+                PdfTool(
+                    "PDF to Image",
+                    "Convert pages to images",
+                    Icons.Filled.Image
+                ),
+                PdfTool(
+                    "Image to PDF",
+                    "Create PDF from images",
+                    Icons.Filled.PictureAsPdf
+                ),
+                PdfTool(
+                    "Merge PDF",
+                    "Combine multiple PDFs",
+                    Icons.Filled.CallMerge
+                ),
+                PdfTool(
+                    "Split PDF",
+                    "Extract selected pages",
+                    Icons.Filled.CallSplit
+                ),
+                PdfTool(
+                    "Compress PDF",
+                    "Reduce PDF file size",
+                    Icons.Filled.Compress
+                ),
+                PdfTool(
+                    "Rotate PDF",
+                    "Change page orientation",
+                    Icons.Filled.RotateRight
                 )
+            )
 
-                Text(
-                    text = "to do today?",
-                    fontSize = 27.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = BrandBlue
-                )
+            val filteredTools = tools.filter {
+                it.title.contains(searchQuery, ignoreCase = true) ||
+                        it.subtitle.contains(searchQuery, ignoreCase = true)
+            }
 
-                Spacer(modifier = Modifier.height(20.dp))
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background
+            ) { paddingValues ->
 
-                // Search field
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = {
-                        Text("Search PDF tools...")
-                    },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Filled.Search,
-                            contentDescription = "Search"
-                        )
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BrandBlue,
-                        unfocusedBorderColor = Color(0xFFE1E5EF),
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Featured action
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = BrandBlue
-                    )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(22.dp)
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // App branding
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "FEATURED TOOL",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White.copy(alpha = 0.75f)
-                        )
 
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(BrandBlue),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = "Compress PDF",
-                                    fontSize = 22.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-
-                                Spacer(modifier = Modifier.height(5.dp))
-
-                                Text(
-                                    text = "Reduce file size for easy sharing.",
-                                    fontSize = 13.sp,
-                                    color = Color.White.copy(alpha = 0.85f)
-                                )
-                            }
 
                             Icon(
-                                imageVector = Icons.Filled.Compress,
-                                contentDescription = null,
+                                imageVector = Icons.Filled.Description,
+                                contentDescription = "DocConveter logo",
                                 tint = Color.White,
-                                modifier = Modifier.size(42.dp)
+                                modifier = Modifier.size(27.dp)
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
 
-                        Button(
-                            onClick = {
-                                showPdfCompression = true
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White,
-                                contentColor = BrandBlue
-                            ),
-                            shape = RoundedCornerShape(12.dp)
+                        Column(
+                            modifier = Modifier.weight(1f)
                         ) {
+
                             Text(
-                                text = "Get started",
-                                fontWeight = FontWeight.Bold
+                                text = "DocConveter",
+                                fontSize = 21.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+
+                            Text(
+                                text = "Every file. One solution.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        IconButton(
+                            onClick = {
+                                showSettings = true
+                            }
+                        ) {
+
+                            Icon(
+                                imageVector = Icons.Filled.Settings,
+                                contentDescription = "Settings",
+                                tint = MaterialTheme.colorScheme.onBackground
                             )
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(28.dp))
+                    Spacer(modifier = Modifier.height(30.dp))
 
-                // Tools heading
-                Text(
-                    text = "PDF Tools",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkText
-                )
-
-                Text(
-                    text = "Everything you need in one place",
-                    fontSize = 13.sp,
-                    color = SecondaryText
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Tool cards
-                if (filteredTools.isEmpty()) {
+                    // Welcome heading
                     Text(
-                        text = "No tools found.",
-                        color = SecondaryText,
-                        modifier = Modifier.padding(vertical = 20.dp)
+                        text = "What would you like",
+                        fontSize = 27.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
-                } else {
-                    filteredTools.chunked(2).forEach { rowTools ->
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            rowTools.forEach { tool ->
-                                ToolCard(
-                                    tool = tool,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = {
-                                        if (tool.title == "PDF to Image") {
+                    Text(
+                        text = "to do today?",
+                        fontSize = 27.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
-                                            showPdfToImage = true
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                                        } else if (tool.title == "Image to PDF") {
+                    // Search field
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = {
+                            searchQuery = it
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = {
+                            Text(
+                                text = "Search PDF tools...",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = "Search",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            cursorColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
 
-                                            showImageToPdf = true
+                    Spacer(modifier = Modifier.height(28.dp))
 
-                                        } else if (tool.title == "Merge PDF") {
+                    // Dashboard introduction
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
 
-                                            showMergePdf = true
+                        Column {
 
-                                        } else if (tool.title == "Split PDF") {
+                            Text(
+                                text = "Your PDF workspace",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
 
-                                            showSplitPdf = true
+                            Spacer(modifier = Modifier.height(4.dp))
 
-                                        } else if (tool.title == "Compress PDF") {
-
-                                            showPdfCompression = true
-
-                                        } else if (tool.title == "Rotate PDF") {
-
-                                            showRotatePdf = true
-
-                                        } else {
-
-                                            Toast.makeText(
-                                                context,
-                                                "${tool.title} is coming soon!",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                )
-                            }
-
-                            if (rowTools.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
+                            Text(
+                                text = "Choose a tool to get started",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+
+                            Icon(
+                                imageVector = Icons.Filled.Description,
+                                contentDescription = "PDF workspace",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
-                // Recent files section
-                Text(
-                    text = "Recent Files",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkText
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White
+                    // Tools heading
+                    Text(
+                        text = "PDF Tools",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Description,
-                            contentDescription = null,
-                            tint = Color(0xFFADB6C8),
-                            modifier = Modifier.size(38.dp)
-                        )
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "Everything you need in one place",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Tool cards
+                    if (filteredTools.isEmpty()) {
 
                         Text(
-                            text = "No recent files",
-                            fontWeight = FontWeight.SemiBold,
-                            color = DarkText
+                            text = "No tools found.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 20.dp)
                         )
 
-                        Text(
-                            text = "Your processed documents will appear here.",
-                            fontSize = 12.sp,
-                            color = SecondaryText
-                        )
+                    } else {
+
+                        filteredTools.chunked(2).forEach { rowTools ->
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+
+                                rowTools.forEach { tool ->
+
+                                    ToolCard(
+                                        tool = tool,
+                                        modifier = Modifier.weight(1f),
+                                        onClick = {
+
+                                            when (tool.title) {
+
+                                                "PDF to Image" -> {
+                                                    showPdfToImage = true
+                                                }
+
+                                                "Image to PDF" -> {
+                                                    showImageToPdf = true
+                                                }
+
+                                                "Merge PDF" -> {
+                                                    showMergePdf = true
+                                                }
+
+                                                "Split PDF" -> {
+                                                    showSplitPdf = true
+                                                }
+
+                                                "Compress PDF" -> {
+                                                    showPdfCompression = true
+                                                }
+
+                                                "Rotate PDF" -> {
+                                                    showRotatePdf = true
+                                                }
+
+                                                else -> {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "${tool.title} is coming soon!",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+
+                                if (rowTools.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+                        }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(30.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Recent files
+                    Text(
+                        text = "Recent Files",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        border = BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outlineVariant
+                        )
+                    ) {
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+
+                            Icon(
+                                imageVector = Icons.Filled.Description,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(38.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(
+                                text = "No recent files",
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            Text(
+                                text = "Your processed documents will appear here.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(30.dp))
+                }
             }
         }
     }
@@ -472,32 +587,46 @@ private fun ToolCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+
     Card(
         modifier = modifier
             .height(145.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp
+            defaultElevation = 0.dp
         )
     ) {
+
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
+
             Box(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFEDF1FF)),
+                    .background(
+                        MaterialTheme.colorScheme.primary.copy(
+                            alpha = 0.12f
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
+
                 Icon(
                     imageVector = tool.icon,
                     contentDescription = null,
-                    tint = BrandBlue,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(23.dp)
                 )
             }
@@ -508,7 +637,7 @@ private fun ToolCard(
                 text = tool.title,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = DarkText
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -516,10 +645,9 @@ private fun ToolCard(
             Text(
                 text = tool.subtitle,
                 fontSize = 11.sp,
-                color = SecondaryText,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 15.sp
             )
         }
-
     }
 }

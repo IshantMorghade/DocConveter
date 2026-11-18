@@ -1,14 +1,22 @@
 
 package com.example.docconveter
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color as AndroidColor
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.widget.Toast
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.PictureAsPdf
@@ -22,33 +30,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color as AndroidColor
-
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.cos.COSStream
 import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject
 import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
-import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject
-import com.tom_roush.pdfbox.cos.COSStream
 
 import java.io.ByteArrayOutputStream
-
+import java.io.File
+import java.io.FileOutputStream
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-
-import android.content.Intent
-import android.content.ActivityNotFoundException
-import android.widget.Toast
-
-import java.io.File
-import java.io.FileOutputStream
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 
 
 private fun compressPdf(
@@ -70,7 +65,6 @@ private fun compressPdf(
 
     PDDocument.load(inputFile).use { document ->
 
-        // Prevent processing the same PDF objects repeatedly.
         val processedImages = mutableSetOf<COSStream>()
         val processedForms = mutableSetOf<COSStream>()
 
@@ -78,7 +72,6 @@ private fun compressPdf(
             resources: com.tom_roush.pdfbox.pdmodel.PDResources,
             depth: Int = 0
         ) {
-            // Protect against deeply nested or circular Form XObjects.
             if (depth > 20) return
 
             val names = resources.xObjectNames.toList()
@@ -203,15 +196,22 @@ private fun compressPdf(
     }
 }
 
+
 private fun formatPdfSize(bytes: Long): String {
     return when {
         bytes < 1024 -> "$bytes B"
+
         bytes < 1024 * 1024 ->
             String.format("%.2f KB", bytes / 1024.0)
+
         else ->
-            String.format("%.2f MB", bytes / (1024.0 * 1024.0))
+            String.format(
+                "%.2f MB",
+                bytes / (1024.0 * 1024.0)
+            )
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -220,10 +220,19 @@ fun PdfCompressionScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val colorScheme = MaterialTheme.colorScheme
 
-    var selectedPdf by remember { mutableStateOf<Uri?>(null) }
-    var pdfName by remember { mutableStateOf("") }
-    var originalSize by remember { mutableLongStateOf(0L) }
+    var selectedPdf by remember {
+        mutableStateOf<Uri?>(null)
+    }
+
+    var pdfName by remember {
+        mutableStateOf("")
+    }
+
+    var originalSize by remember {
+        mutableLongStateOf(0L)
+    }
 
     var compressionLevel by remember {
         mutableStateOf("Medium")
@@ -237,8 +246,13 @@ fun PdfCompressionScreen(
         mutableStateOf<Uri?>(null)
     }
 
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf("") }
+    var isLoading by remember {
+        mutableStateOf(false)
+    }
+
+    var errorMessage by remember {
+        mutableStateOf("")
+    }
 
     var compressionReduced by remember {
         mutableStateOf(false)
@@ -249,6 +263,7 @@ fun PdfCompressionScreen(
     }
 
 
+    // PDF output destination picker
     val pdfSaver = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/pdf")
     ) { uri ->
@@ -284,12 +299,15 @@ fun PdfCompressionScreen(
                                         input.copyTo(output)
                                     }
                                 }
-                                ?: throw Exception("Unable to open source PDF.")
+                                ?: throw Exception(
+                                    "Unable to open source PDF."
+                                )
 
                             if (compressionMode == "Standard") {
 
-                                // Existing offline compression
-                                PDFBoxResourceLoader.init(context.applicationContext)
+                                PDFBoxResourceLoader.init(
+                                    context.applicationContext
+                                )
 
                                 compressPdf(
                                     sourceFile,
@@ -299,7 +317,6 @@ fun PdfCompressionScreen(
 
                             } else {
 
-                                // Advanced online compression
                                 compressPdfWithApi(
                                     sourceFile,
                                     candidateFile
@@ -324,7 +341,9 @@ fun PdfCompressionScreen(
                                         input.copyTo(output)
                                     }
                                 }
-                                ?: throw Exception("Unable to save output PDF.")
+                                ?: throw Exception(
+                                    "Unable to save output PDF."
+                                )
 
                             useCompressedFile
 
@@ -341,17 +360,22 @@ fun PdfCompressionScreen(
                 } catch (e: Exception) {
                     errorMessage = e.localizedMessage
                         ?: "Unable to compress PDF."
+
                 } finally {
                     isLoading = false
                 }
             }
         }
     }
+
+
+    // PDF input picker
     val pdfPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
 
         if (uri != null) {
+
             selectedPdf = uri
             originalSize = 0L
             pdfName = "Selected PDF"
@@ -383,18 +407,21 @@ fun PdfCompressionScreen(
                             )
 
                             if (cursor.moveToFirst()) {
+
                                 if (nameIndex >= 0) {
                                     name = cursor.getString(nameIndex)
                                         ?: name
                                 }
 
-                                if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) {
+                                if (
+                                    sizeIndex >= 0 &&
+                                    !cursor.isNull(sizeIndex)
+                                ) {
                                     size = cursor.getLong(sizeIndex)
                                 }
                             }
                         }
 
-                        // Fallback when the provider doesn't report file size.
                         if (size <= 0L) {
                             context.contentResolver
                                 .openAssetFileDescriptor(uri, "r")
@@ -415,8 +442,10 @@ fun PdfCompressionScreen(
                     }
 
                 } catch (e: Exception) {
+
                     errorMessage = e.localizedMessage
                         ?: "Unable to read the selected PDF."
+
                     selectedPdf = null
 
                 } finally {
@@ -426,306 +455,277 @@ fun PdfCompressionScreen(
         }
     }
 
-    MaterialTheme(
-        colorScheme = lightColorScheme(
-            primary = Color(0xFF3157D5),
-            background = Color(0xFFF6F7FB),
-            surface = Color.White
-        )
-    ) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text(
-                            "Compress PDF",
-                            fontWeight = FontWeight.Bold
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(
-                            onClick = onBack,
-                            enabled = !isLoading
-                        ) {
-                            Icon(
-                                Icons.Default.ArrowBack,
-                                contentDescription = "Go back"
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.White
-                    )
-                )
 
-            },
-            bottomBar = {
-                Surface(
-                    color = Color.White,
-                    shadowElevation = 8.dp
-                ) {
-                    Button(
-                        onClick = {
-                            pdfSaver.launch("DocConveter_Compressed.pdf")
-                        },
-                        enabled = selectedPdf != null && !isLoading,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                horizontal = 20.dp,
-                                vertical = 12.dp
-                            )
-                            .height(55.dp),
-                        shape = RoundedCornerShape(14.dp)
+    // Main screen UI
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Compress PDF",
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface
+                    )
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onBack,
+                        enabled = !isLoading
                     ) {
-                        Text(
-                            text = if (isLoading) {
-                                "Compressing..."
-                            } else {
-                                "Compress PDF"
-                            },
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Go back",
+                            tint = colorScheme.onSurface
                         )
                     }
-                }
-            },
-            containerColor = Color(0xFFF6F7FB)
-        ) { padding ->
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(20.dp)
-            )  {
-
-                Text(
-                    "Reduce PDF File Size",
-                    fontSize = 23.sp,
-                    fontWeight = FontWeight.Bold
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorScheme.surface
                 )
+            )
+        },
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    "Choose a PDF and select how much compression you need.",
-                    fontSize = 14.sp,
-                    color = Color(0xFF737D91)
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                OutlinedButton(
+        bottomBar = {
+            Surface(
+                color = colorScheme.surface,
+                shadowElevation = 8.dp
+            ) {
+                Button(
                     onClick = {
-                        pdfPicker.launch(arrayOf("application/pdf"))
+                        pdfSaver.launch(
+                            "DocConveter_Compressed.pdf"
+                        )
                     },
-                    enabled = !isLoading,
+                    enabled = selectedPdf != null && !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(
+                            horizontal = 20.dp,
+                            vertical = 12.dp
+                        )
                         .height(55.dp),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Icon(
-                        Icons.Default.PictureAsPdf,
-                        contentDescription = null
-                    )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    Text("Select PDF File")
-                }
-
-                if (isLoading) {
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-
-                if (selectedPdf != null && originalSize > 0L) {
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.White
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(18.dp)
-                        ) {
-                            Text(
-                                pdfName,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            Text(
-                                "Original size",
-                                fontSize = 13.sp,
-                                color = Color(0xFF737D91)
-                            )
-
-                            Text(
-                                formatPdfSize(originalSize),
-                                fontSize = 21.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF3157D5)
-                            )
-                        }
-                    }
                     Text(
-                        "Compression Mode",
-                        fontSize = 17.sp,
+                        text = if (isLoading) {
+                            "Compressing..."
+                        } else {
+                            "Compress PDF"
+                        },
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
+                }
+            }
+        },
 
-                    Spacer(modifier = Modifier.height(12.dp))
+        containerColor = colorScheme.background
 
-                    val modes = listOf("Standard", "Advanced")
+    ) { padding ->
 
-                    modes.forEach { mode ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp)
+        ) {
 
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 10.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (compressionMode == mode)
-                                    Color(0xFFEAF0FF)
-                                else
-                                    Color.White
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = compressionMode == mode,
-                                    onClick = {
-                                        compressionMode = mode
-                                    }
-                                )
+            Text(
+                text = "Reduce PDF File Size",
+                fontSize = 23.sp,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.onBackground
+            )
 
-                                Column(
-                                    modifier = Modifier.padding(vertical = 10.dp)
-                                ) {
-                                    Text(
-                                        if (mode == "Standard")
-                                            "Standard Compression"
-                                        else
-                                            "Advanced Compression",
-                                        fontWeight = FontWeight.SemiBold
-                                    )
+            Spacer(modifier = Modifier.height(8.dp))
 
-                                    Text(
-                                        if (mode == "Standard")
-                                            "Offline compression on your device"
-                                        else
-                                            "Online compression using DocConveter server",
-                                        fontSize = 12.sp,
-                                        color = Color(0xFF737D91)
-                                    )
-                                }
-                            }
-                        }
-                    }
+            Text(
+                text = "Choose a PDF and select how much compression you need.",
+                fontSize = 14.sp,
+                color = colorScheme.onSurfaceVariant
+            )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-                    if (compressionMode == "Standard") {
 
-                        Spacer(modifier = Modifier.height(24.dp))
+            // Select PDF button
+            OutlinedButton(
+                onClick = {
+                    pdfPicker.launch(
+                        arrayOf("application/pdf")
+                    )
+                },
+                enabled = !isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PictureAsPdf,
+                    contentDescription = null
+                )
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Text("Select PDF File")
+            }
+
+
+            if (isLoading) {
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = colorScheme.primary
+                    )
+                }
+            }
+
+
+            if (selectedPdf != null && originalSize > 0L) {
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Selected PDF details
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = colorScheme.surface
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        colorScheme.outlineVariant
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp)
+                    ) {
+                        Text(
+                            text = pdfName,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.onSurface
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
 
                         Text(
-                            "Compression Level",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold
+                            text = "Original size",
+                            fontSize = 13.sp,
+                            color = colorScheme.onSurfaceVariant
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        val levels = listOf(
-                            "Low",
-                            "Medium",
-                            "High"
+                        Text(
+                            text = formatPdfSize(originalSize),
+                            fontSize = 21.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.primary
                         )
+                    }
+                }
 
-                        levels.forEach { level ->
 
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 10.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (
-                                        compressionLevel == level
-                                    ) Color(0xFFEAF0FF)
-                                    else Color.White
-                                )
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    RadioButton(
-                                        selected = compressionLevel == level,
-                                        onClick = {
-                                            compressionLevel = level
-                                        }
-                                    )
+                Spacer(modifier = Modifier.height(20.dp))
 
-                                    Column(
-                                        modifier = Modifier.padding(vertical = 10.dp)
-                                    ) {
-                                        Text(
-                                            level,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
+                Text(
+                    text = "Compression Mode",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.onBackground
+                )
 
-                                        Text(
-                                            when (level) {
-                                                "Low" ->
-                                                    "Prioritize document quality"
-                                                "Medium" ->
-                                                    "Balance quality and file size"
-                                                else ->
-                                                    "Prioritize smaller file size"
-                                            },
-                                            fontSize = 12.sp,
-                                            color = Color(0xFF737D91)
-                                        )
-                                    }
+                Spacer(modifier = Modifier.height(12.dp))
+
+
+                // Standard and Advanced modes
+                val modes = listOf("Standard", "Advanced")
+
+                modes.forEach { mode ->
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 10.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (compressionMode == mode) {
+                                colorScheme.primary.copy(alpha = 0.12f)
+                            } else {
+                                colorScheme.surface
+                            }
+                        ),
+                        border = BorderStroke(
+                            1.dp,
+                            if (compressionMode == mode) {
+                                colorScheme.primary
+                            } else {
+                                colorScheme.outlineVariant
+                            }
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = compressionMode == mode,
+                                onClick = {
+                                    compressionMode = mode
                                 }
+                            )
+
+                            Column(
+                                modifier = Modifier.padding(vertical = 10.dp)
+                            ) {
+                                Text(
+                                    text = if (mode == "Standard") {
+                                        "Standard Compression"
+                                    } else {
+                                        "Advanced Compression"
+                                    },
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colorScheme.onSurface
+                                )
+
+                                Text(
+                                    text = if (mode == "Standard") {
+                                        "Offline compression on your device"
+                                    } else {
+                                        "Online compression using DocConveter server"
+                                    },
+                                    fontSize = 12.sp,
+                                    color = colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }
+                }
 
+
+                // Compression levels are only needed for Standard mode
+                if (compressionMode == "Standard") {
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Compression Level",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onBackground
+                    )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    val levels = listOf(
-                        "Low",
-                        "Medium",
-                        "High"
-                    )
+                    val levels = listOf("Low", "Medium", "High")
 
                     levels.forEach { level ->
 
@@ -735,10 +735,19 @@ fun PdfCompressionScreen(
                                 .padding(bottom = 10.dp),
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = if (
-                                    compressionLevel == level
-                                ) Color(0xFFEAF0FF)
-                                else Color.White
+                                containerColor = if (compressionLevel == level) {
+                                    colorScheme.primary.copy(alpha = 0.12f)
+                                } else {
+                                    colorScheme.surface
+                                }
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (compressionLevel == level) {
+                                    colorScheme.primary
+                                } else {
+                                    colorScheme.outlineVariant
+                                }
                             )
                         ) {
                             Row(
@@ -758,114 +767,131 @@ fun PdfCompressionScreen(
                                     modifier = Modifier.padding(vertical = 10.dp)
                                 ) {
                                     Text(
-                                        level,
-                                        fontWeight = FontWeight.SemiBold
+                                        text = level,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = colorScheme.onSurface
                                     )
 
                                     Text(
-                                        when (level) {
+                                        text = when (level) {
                                             "Low" ->
                                                 "Prioritize document quality"
+
                                             "Medium" ->
                                                 "Balance quality and file size"
+
                                             else ->
                                                 "Prioritize smaller file size"
                                         },
                                         fontSize = 12.sp,
-                                        color = Color(0xFF737D91)
+                                        color = colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
                         }
                     }
                 }
+            }
 
-                if (errorMessage.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
 
-                    Text(
-                        errorMessage,
-                        color = Color.Red,
-                        fontSize = 13.sp
-                    )
-                }
-                if (showSuccessDialog) {
-                    AlertDialog(
-                        onDismissRequest = {
-                            showSuccessDialog = false
-                        },
-                        title = {
-                            Text(
-                                text = if (compressionReduced) {
-                                    "Compression Successful"
-                                } else {
-                                    "PDF Saved Without Reduction"
-                                },
-                                fontWeight = FontWeight.Bold
-                            )
-                        },
-                        text = {
-                            Text(
-                                text = if (compressionReduced) {
-                                    "Your PDF size has been reduced successfully. Would you like to open it now?"
-                                } else {
-                                    "This PDF could not be reduced further. The original file was saved without increasing its size. Would you like to open it?"
-                                }
-                            )
-                        },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    showSuccessDialog = false
+            // Error message
+            if (errorMessage.isNotEmpty()) {
 
-                                    compressedPdfUri?.let { uri ->
-                                        try {
-                                            val intent = Intent(
-                                                Intent.ACTION_VIEW
-                                            ).apply {
-                                                setDataAndType(
-                                                    uri,
-                                                    "application/pdf"
-                                                )
-                                                addFlags(
-                                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                                )
-                                            }
+                Spacer(modifier = Modifier.height(12.dp))
 
-                                            context.startActivity(
-                                                Intent.createChooser(
-                                                    intent,
-                                                    "Open compressed PDF"
-                                                )
+                Text(
+                    text = errorMessage,
+                    color = Color(0xFFEF5350),
+                    fontSize = 13.sp
+                )
+            }
+
+
+            // Compression success dialog
+            if (showSuccessDialog) {
+
+                AlertDialog(
+                    onDismissRequest = {
+                        showSuccessDialog = false
+                    },
+
+                    title = {
+                        Text(
+                            text = if (compressionReduced) {
+                                "Compression Successful"
+                            } else {
+                                "PDF Saved Without Reduction"
+                            },
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+
+                    text = {
+                        Text(
+                            text = if (compressionReduced) {
+                                "Your PDF size has been reduced successfully. Would you like to open it now?"
+                            } else {
+                                "This PDF could not be reduced further. The original file was saved without increasing its size. Would you like to open it?"
+                            }
+                        )
+                    },
+
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showSuccessDialog = false
+
+                                compressedPdfUri?.let { uri ->
+
+                                    try {
+                                        val intent = Intent(
+                                            Intent.ACTION_VIEW
+                                        ).apply {
+                                            setDataAndType(
+                                                uri,
+                                                "application/pdf"
                                             )
 
-                                        } catch (e: ActivityNotFoundException) {
-                                            Toast.makeText(
-                                                context,
-                                                "No PDF viewer installed.",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                            addFlags(
+                                                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                            )
                                         }
+
+                                        context.startActivity(
+                                            Intent.createChooser(
+                                                intent,
+                                                "Open compressed PDF"
+                                            )
+                                        )
+
+                                    } catch (e: ActivityNotFoundException) {
+
+                                        Toast.makeText(
+                                            context,
+                                            "No PDF viewer installed.",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
                                 }
-                            ) {
-                                Text("Open PDF")
                             }
-                        },
-                        dismissButton = {
-                            TextButton(
-                                onClick = {
-                                    showSuccessDialog = false
-                                }
-                            ) {
-                                Text("Done")
-                            }
+                        ) {
+                            Text("Open PDF")
                         }
-                    )
-                }
+                    },
 
-                Spacer(modifier = Modifier.weight(1f))
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                showSuccessDialog = false
+                            }
+                        ) {
+                            Text("Done")
+                        }
+                    }
+                )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

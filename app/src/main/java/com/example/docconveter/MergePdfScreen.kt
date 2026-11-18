@@ -6,7 +6,7 @@ import android.net.Uri
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -171,13 +171,15 @@ fun MergePdfScreen(
         )
     ) {
 
+
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = {
                         Text(
                             text = "Merge PDF",
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     },
                     navigationIcon = {
@@ -187,16 +189,17 @@ fun MergePdfScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Go back"
+                                contentDescription = "Go back",
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
                 )
             },
-            containerColor = Color(0xFFF6F7FB)
+            containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
 
             Column(
@@ -209,7 +212,8 @@ fun MergePdfScreen(
                 Text(
                     text = "Combine Multiple PDFs",
                     fontSize = 23.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -217,7 +221,7 @@ fun MergePdfScreen(
                 Text(
                     text = "Select two or more PDF files to combine them into one document.",
                     fontSize = 14.sp,
-                    color = Color(0xFF737D91)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(22.dp))
@@ -249,7 +253,8 @@ fun MergePdfScreen(
                 Text(
                     text = "Selected Files (${selectedPdfs.size})",
                     fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -264,7 +269,7 @@ fun MergePdfScreen(
                     ) {
                         Text(
                             text = "No PDF files selected yet.",
-                            color = Color(0xFF737D91),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
                     }
@@ -277,7 +282,6 @@ fun MergePdfScreen(
                             .weight(1f),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-
                         items(
                             items = selectedPdfs,
                             key = { it.toString() }
@@ -287,21 +291,23 @@ fun MergePdfScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = Color.White
+                                    containerColor = MaterialTheme.colorScheme.surface
+                                ),
+                                border = BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outlineVariant
                                 )
                             ) {
-
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-
                                     Icon(
                                         imageVector = Icons.Default.PictureAsPdf,
                                         contentDescription = null,
-                                        tint = Color(0xFF3157D5),
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(30.dp)
                                     )
 
@@ -315,15 +321,14 @@ fun MergePdfScreen(
                                             ?: "Selected PDF",
                                         modifier = Modifier.weight(1f),
                                         fontSize = 13.sp,
-                                        maxLines = 2
+                                        maxLines = 2,
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
 
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-
                                         Column {
-
                                             TextButton(
                                                 onClick = {
                                                     val index = selectedPdfs.indexOf(uri)
@@ -364,7 +369,7 @@ fun MergePdfScreen(
                                             Icon(
                                                 imageVector = Icons.Default.Delete,
                                                 contentDescription = "Remove PDF",
-                                                tint = Color(0xFFD32F2F)
+                                                tint = Color(0xFFEF5350)
                                             )
                                         }
                                     }
@@ -405,12 +410,11 @@ fun MergePdfScreen(
                         .height(55.dp),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-
                     if (isMerging) {
 
                         CircularProgressIndicator(
                             modifier = Modifier.size(22.dp),
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onPrimary,
                             strokeWidth = 2.dp
                         )
 
@@ -429,6 +433,7 @@ fun MergePdfScreen(
                 }
             }
         }
+
     }
 
     // Success dialog

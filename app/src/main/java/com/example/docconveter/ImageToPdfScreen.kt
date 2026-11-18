@@ -121,11 +121,11 @@ fun ImageToPdfScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },
-        containerColor = Color(0xFFF6F7FB)
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
 
         Column(
@@ -142,7 +142,7 @@ fun ImageToPdfScreen(
             Icon(
                 imageVector = Icons.Default.PictureAsPdf,
                 contentDescription = null,
-                tint = Color(0xFF3157D5),
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(65.dp)
             )
 
@@ -151,6 +151,7 @@ fun ImageToPdfScreen(
             Text(
                 text = "Convert Images to PDF",
                 fontSize = 23.sp,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Bold
             )
 
@@ -159,7 +160,7 @@ fun ImageToPdfScreen(
             Text(
                 text = "Select multiple images and combine them into one PDF document.",
                 fontSize = 14.sp,
-                color = Color(0xFF737D91),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 21.sp
             )
 
@@ -190,7 +191,7 @@ fun ImageToPdfScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             ) {
                 Column(
@@ -203,12 +204,12 @@ fun ImageToPdfScreen(
                         text = "${selectedImages.size}",
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF3157D5)
+                        color = MaterialTheme.colorScheme.primary
                     )
 
                     Text(
                         text = "Images selected",
-                        color = Color(0xFF737D91)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     if (selectedImages.isNotEmpty()) {
@@ -223,6 +224,7 @@ fun ImageToPdfScreen(
                             ) {
                                 Text(
                                     text = "Image ${index + 1}",
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.weight(1f)
                                 )
 
@@ -253,7 +255,7 @@ fun ImageToPdfScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "No images selected yet",
-                            color = Color(0xFF737D91),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp
                         )
                     }

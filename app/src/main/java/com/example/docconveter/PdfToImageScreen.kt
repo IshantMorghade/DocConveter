@@ -16,6 +16,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -240,29 +241,32 @@ fun PdfToImageScreen(
         )
     ) {
 
+
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = {
                         Text(
-                            "PDF to Image",
-                            fontWeight = FontWeight.Bold
+                            text = "PDF to Image",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(
                                 Icons.Default.ArrowBack,
-                                contentDescription = "Go back"
+                                contentDescription = "Go back",
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
                 )
             },
-            containerColor = Color(0xFFF6F7FB)
+            containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
 
             Column(
@@ -279,7 +283,7 @@ fun PdfToImageScreen(
                 Icon(
                     imageVector = Icons.Default.PictureAsPdf,
                     contentDescription = null,
-                    tint = Color(0xFF3157D5),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(65.dp)
                 )
 
@@ -288,7 +292,8 @@ fun PdfToImageScreen(
                 Text(
                     text = "Convert PDF to Images",
                     fontSize = 23.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -296,7 +301,7 @@ fun PdfToImageScreen(
                 Text(
                     text = "Extract PDF pages as high-quality images.",
                     fontSize = 14.sp,
-                    color = Color(0xFF737D91)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(30.dp))
@@ -333,7 +338,10 @@ fun PdfToImageScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Text("Loading PDF...")
+                    Text(
+                        text = "Loading PDF...",
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
                 }
 
                 // Selected PDF information
@@ -342,11 +350,14 @@ fun PdfToImageScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.surface
                         ),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outlineVariant
+                        )
                     ) {
-
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -357,14 +368,15 @@ fun PdfToImageScreen(
                             Text(
                                 text = "Selected PDF",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 17.sp
+                                fontSize = 17.sp,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
 
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
                                 text = selectedPdfName ?: "",
-                                color = Color(0xFF737D91),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 13.sp
                             )
 
@@ -372,7 +384,7 @@ fun PdfToImageScreen(
 
                             Text(
                                 text = "$pageCount pages",
-                                color = Color(0xFF3157D5),
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp
                             )
@@ -388,7 +400,8 @@ fun PdfToImageScreen(
                     Text(
                         text = "First Page Preview",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 17.sp
+                        fontSize = 17.sp,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -396,11 +409,14 @@ fun PdfToImageScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.surface
                         ),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outlineVariant
+                        )
                     ) {
-
                         Image(
                             bitmap = bitmap.asImageBitmap(),
                             contentDescription = "PDF first page preview",
@@ -413,8 +429,7 @@ fun PdfToImageScreen(
                     }
                 }
 
-
-// Page selection options
+                // Page selection options
                 if (previewBitmap != null && !isLoading) {
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -422,9 +437,13 @@ fun PdfToImageScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.surface
                         ),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outlineVariant
+                        )
                     ) {
                         Column(
                             modifier = Modifier
@@ -435,7 +454,8 @@ fun PdfToImageScreen(
                             Text(
                                 text = "Select Pages",
                                 fontSize = 17.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -460,7 +480,8 @@ fun PdfToImageScreen(
 
                                     Text(
                                         text = option,
-                                        fontSize = 14.sp
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                             }
@@ -501,7 +522,7 @@ fun PdfToImageScreen(
                             Text(
                                 text = "Total PDF pages: $pageCount",
                                 fontSize = 12.sp,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -522,7 +543,8 @@ fun PdfToImageScreen(
                                     pageCount = pageCount
                                 )
                             } catch (e: Exception) {
-                                errorMessage = e.localizedMessage ?: "Invalid page selection."
+                                errorMessage =
+                                    e.localizedMessage ?: "Invalid page selection."
                                 null
                             }
 
@@ -540,7 +562,6 @@ fun PdfToImageScreen(
                             .height(55.dp),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-
                         if (isConverting) {
 
                             CircularProgressIndicator(
@@ -571,12 +592,13 @@ fun PdfToImageScreen(
 
                     Text(
                         text = message,
-                        color = Color(0xFFD32F2F),
+                        color = Color(0xFFEF5350),
                         fontSize = 13.sp
                     )
                 }
             }
         }
+
 
         // Conversion Success Dialog
         if (showSuccessDialog) {
