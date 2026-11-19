@@ -55,6 +55,9 @@ fun RotatePdfScreen(onBack: () -> Unit) {
     var pageRange by remember {
         mutableStateOf("")
     }
+    var pageRangeError by remember {
+        mutableStateOf("")
+    }
 
     var isProcessing by remember {
         mutableStateOf(false)
@@ -356,6 +359,7 @@ fun RotatePdfScreen(onBack: () -> Unit) {
                     value = pageRange,
                     onValueChange = {
                         pageRange = it
+                        pageRangeError = ""
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = {
@@ -371,6 +375,15 @@ fun RotatePdfScreen(onBack: () -> Unit) {
                     },
                     singleLine = true
                 )
+                if (pageRangeError.isNotBlank()) {
+                    Text(
+                        text = pageRangeError,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp)
+                    )
+                }
 
 
                 Spacer(modifier = Modifier.height(22.dp))
@@ -380,6 +393,14 @@ fun RotatePdfScreen(onBack: () -> Unit) {
 
                         val inputFile = selectedPdfFile
                             ?: return@Button
+                        pageRangeError = ""
+
+                        val pagesToRotate = try {
+                            parsePageRange(pageRange, pageCount)
+                        } catch (e: Exception) {
+                            pageRangeError = e.message ?: "Invalid page selection."
+                            return@Button
+                        }
 
                         scope.launch {
                             isProcessing = true
@@ -388,10 +409,6 @@ fun RotatePdfScreen(onBack: () -> Unit) {
                             try {
                                 val outputFile = withContext(Dispatchers.IO) {
 
-                                    val pagesToRotate = parsePageRange(
-                                        pageRange,
-                                        pageCount
-                                    )
 
                                     val output = File(
                                         context.cacheDir,
